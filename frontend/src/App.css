@@ -1,0 +1,181 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f5f5;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+h1 {
+  font-size: 32px;
+  margin-bottom: 4px;
+  color: #1a1a1a;
+}
+
+.subtitle {
+  color: #666;
+  margin-bottom: 32px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 18px;
+  color: #1a1a1a;
+}
+
+.hint {
+  color: #666;
+  font-size: 14px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+th, td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+}
+
+th {
+  background: #fafafa;
+  font-weight: 600;
+  color: #444;
+}
+
+.raw-text {
+  font-size: 12px;
+  color: #888;
+  max-width: 250px;
+}
+
+.approve-btn {
+  margin-top: 20px;
+  background: #1a73e8;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.approve-btn:hover {
+  background: #1557b0;
+}
+
+.approved-msg {
+  margin-top: 20px;
+  color: #1a7f37;
+  font-weight: 600;
+}
+.verdict-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.verdict-box {
+  border-radius: 8px;
+  border: 1px solid #eee;
+  overflow: hidden;
+}
+
+.verdict-pass {
+  border-color: #34a853;
+}
+
+.verdict-fail {
+  border-color: #ea4335;
+}
+
+.verdict-review {
+  border-color: #fbbc04;
+}
+
+.verdict-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #fafafa;
+}
+
+.verdict-criterion {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.verdict-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.verdict-badge.verdict-pass {
+  background: #e6f4ea;
+  color: #1a7f37;
+}
+
+.verdict-badge.verdict-fail {
+  background: #fce8e6;
+  color: #c5221f;
+}
+
+.verdict-badge.verdict-review {
+  background: #fef7e0;
+  color: #b06000;
+}
+
+.verdict-body {
+  padding: 12px 16px;
+  font-size: 13px;
+}
+
+.verdict-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.verdict-row .label {
+  font-weight: 600;
+  color: #666;
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.snippet {
+  font-style: italic;
+  color: #777;
+}
+
+.verdict-row.reason {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}

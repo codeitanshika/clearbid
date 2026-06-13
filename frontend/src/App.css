@@ -179,3 +179,111 @@ th {
   padding-top: 8px;
   border-top: 1px solid #f0f0f0;
 }
+.review-section {
+  border: 1px solid #fbbc04;
+}
+
+.review-item {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.review-bidder {
+  font-weight: 700;
+  color: #444;
+}
+
+.review-criterion {
+  color: #b06000;
+  font-weight: 600;
+}
+
+.review-body {
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.justification-input {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+.review-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.action-btn.approve {
+  background: #e6f4ea;
+  color: #1a7f37;
+}
+
+.action-btn.approve:hover {
+  background: #c8e6c9;
+}
+
+.action-btn.reject {
+  background: #fce8e6;
+  color: #c5221f;
+}
+
+.action-btn.reject:hover {
+  background: #f8d7da;
+}
+
+.action-btn.clarify {
+  background: #fef7e0;
+  color: #b06000;
+}
+
+.action-btn.clarify:hover {
+  background: #fdecc8;
+}
+.fraud-section {
+  border: 1px solid #ea4335;
+}
+
+.fraud-flag {
+  background: #fce8e6;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+}
+
+.fraud-type {
+  font-size: 11px;
+  font-weight: 700;
+  color: #c5221f;
+  letter-spacing: 0.5px;
+}
+
+.fraud-flag p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #444;
+}

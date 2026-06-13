@@ -11,6 +11,7 @@ from agents.document_parser import parse_pdf
 from agents.criteria_extractor import extract_criteria
 from agents.evidence_extractor import extract_evidence
 from engines.rule_engine import evaluate
+from agents.fraud_checker import check_fraud_signals
 import database as db
 
 app = FastAPI(title="ClearBid API")
@@ -110,3 +111,18 @@ async def review_decision(verdict_id: int, action: str = Form(...), justificatio
 @app.get("/")
 def root():
     return {"status": "ClearBid API running"}
+
+@app.get("/tender/{tender_id}/fraud-check")
+async def fraud_check(tender_id: int):
+    bidders = db.get_tender_bidders(tender_id)
+    bidders_data = []
+    for b in bidders:
+        verdicts = db.get_bidder_verdicts(b["bidder_id"])
+        bidders_data.append({
+            "bidder_id": b["bidder_id"],
+            "filename": b["filename"],
+            "verdicts": verdicts
+        })
+
+    flags = check_fraud_signals(bidders_data)
+    return {"tender_id": tender_id, "flags": flags}

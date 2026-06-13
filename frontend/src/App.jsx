@@ -11,6 +11,10 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [bidderLoading, setBidderLoading] = useState(false)
   const [bidders, setBidders] = useState([])
+  const [reviewQueue, setReviewQueue] = useState([])
+  const [reviewLoading, setReviewLoading] = useState(false)
+  const [justifications, setJustifications] = useState({})
+  const [fraudFlags, setFraudFlags] = useState([])
 
   const handleTenderUpload = async (e) => {
     const file = e.target.files[0]
@@ -65,6 +69,48 @@ function App() {
     }
 
     setBidderLoading(false)
+    fetchReviewQueue()
+    fetchFraudFlags()
+  }
+  const fetchReviewQueue = async () => {
+    setReviewLoading(true)
+    try {
+      const res = await axios.get(`${API_BASE}/tender/${tenderId}/needs-review`)
+      setReviewQueue(res.data.items)
+    } catch (err) {
+      alert('Error fetching review queue: ' + err.message)
+    }
+    setReviewLoading(false)
+  }
+const fetchFraudFlags = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/tender/${tenderId}/fraud-check`)
+      setFraudFlags(res.data.flags)
+    } catch (err) {
+      console.error('Error fetching fraud flags:', err.message)
+    }
+  }
+  const handleReviewAction = async (verdictId, action) => {
+    const justification = justifications[verdictId]
+    if (!justification || justification.trim() === '') {
+      alert('Justification is required before recording a decision.')
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('action', action)
+    formData.append('justification', justification)
+
+    try {
+      await axios.post(`${API_BASE}/review-decision/${verdictId}`, formData)
+      setReviewQueue(prev => prev.filter(item => item.verdict_id !== verdictId))
+    } catch (err) {
+      alert('Error recording decision: ' + err.message)
+    }
+  }
+
+  const handleJustificationChange = (verdictId, value) => {
+    setJustifications(prev => ({ ...prev, [verdictId]: value }))
   }
 
   const verdictClass = (verdict) => {
@@ -191,6 +237,96 @@ function App() {
           </div>
         </div>
       ))}
+      {fraudFlags.length > 0 && (
+        <div className="card fraud-section">
+          <h2>⚠ Fraud Signals Detected</h2>
+          <p className="hint">
+            The system detected the following cross-bidder relationships. These require officer attention before final award decisions.
+          </p>
+          {fraudFlags.map((flag, idx) => (
+            <div key={idx} className="fraud-flag">
+              <span className="fraud-type">{flag.type.replace('_', ' ')}</span>
+              <p>{flag.detail}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {reviewLoading && <p className="hint">Loading review queue...</p>}
+
+      {reviewQueue.length > 0 && (
+        <div className="card review-section">
+          <h2>Officer Review Queue</h2>
+          <p className="hint">
+            The following items require manual review. Each decision requires a written justification.
+          </p>
+
+          {reviewQueue.map((item) => (
+            <div key={item.verdict_id} className="review-item">
+              <div className="review-header">
+                <span className="review-bidder">{item.bidder_filename}</span>
+                <span className="review-criterion">{item.criterion_name}</span>
+              </div>
+
+              <div className="review-body">
+                <div className="verdict-row">
+                  <span className="label">Extracted value:</span>
+                  <span>{item.extracted_value !== 'null' ? item.extracted_value : '—'}</span>
+                </div>
+                {item.source_page && (
+                  <div className="verdict-row">
+                    <span className="label">Source page:</span>
+                    <span>{item.source_page}</span>
+                  </div>
+                )}
+                {item.raw_snippet && (
+                  <div className="verdict-row">
+                    <span className="label">Evidence:</span>
+                    <span className="snippet">"{item.raw_snippet}"</span>
+                  </div>
+                )}
+                <div className="verdict-row reason">
+                  <span className="label">Why flagged:</span>
+                  <span>{item.reason}</span>
+                </div>
+              </div>
+
+              <textarea
+                className="justification-input"
+                placeholder="Enter justification for your decision (required)..."
+                value={justifications[item.verdict_id] || ''}
+                onChange={(e) => handleJustificationChange(item.verdict_id, e.target.value)}
+              />
+
+              <div className="review-actions">
+                <button
+                  className="action-btn approve"
+                  onClick={() => handleReviewAction(item.verdict_id, 'APPROVED')}
+                >
+                  Approve
+                </button>
+                <button
+                  className="action-btn reject"
+                  onClick={() => handleReviewAction(item.verdict_id, 'REJECTED')}
+                >
+                  Reject
+                </button>
+                <button
+                  className="action-btn clarify"
+                  onClick={() => handleReviewAction(item.verdict_id, 'CLARIFICATION_REQUESTED')}
+                >
+                  Request Clarification
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!reviewLoading && reviewQueue.length === 0 && bidders.length > 0 && (
+        <div className="card">
+          <p className="approved-msg">✓ No items pending review. All evaluations complete.</p>
+        </div>
+      )}
     </div>
   )
 }

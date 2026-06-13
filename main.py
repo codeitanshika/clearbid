@@ -126,3 +126,10 @@ async def fraud_check(tender_id: int):
 
     flags = check_fraud_signals(bidders_data)
     return {"tender_id": tender_id, "flags": flags}
+
+@app.get("/tender/{tender_id}/audit-report")
+async def audit_report(tender_id: int):
+    report = db.get_full_audit_report(tender_id)
+    if report is None:
+        return {"error": "Tender not found"}
+    return report

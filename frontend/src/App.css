@@ -287,3 +287,7 @@ th {
   font-size: 13px;
   color: #444;
 }
+
+.audit-section {
+  border: 1px solid #1a73e8;
+}

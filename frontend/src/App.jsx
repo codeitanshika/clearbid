@@ -90,6 +90,22 @@ const fetchFraudFlags = async () => {
       console.error('Error fetching fraud flags:', err.message)
     }
   }
+  const downloadAuditReport = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/tender/${tenderId}/audit-report`)
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `clearbid_audit_report_tender_${tenderId}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      alert('Error downloading report: ' + err.message)
+    }
+  }
   const handleReviewAction = async (verdictId, action) => {
     const justification = justifications[verdictId]
     if (!justification || justification.trim() === '') {
@@ -323,8 +339,21 @@ const fetchFraudFlags = async () => {
       )}
 
       {!reviewLoading && reviewQueue.length === 0 && bidders.length > 0 && (
+    
         <div className="card">
           <p className="approved-msg">✓ No items pending review. All evaluations complete.</p>
+        </div>
+      )}
+      {bidders.length > 0 && (
+        <div className="card audit-section">
+          <h2>Audit Trail</h2>
+          <p className="hint">
+            Download the complete decision record for this tender — every criterion,
+            extracted value, source, confidence score, verdict, and officer action with timestamps.
+          </p>
+          <button className="approve-btn" onClick={downloadAuditReport}>
+            Download Audit Report (JSON)
+          </button>
         </div>
       )}
     </div>

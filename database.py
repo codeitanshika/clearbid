@@ -178,3 +178,46 @@ def get_needs_review(tender_id: int):
     rows = cur.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+def get_full_audit_report(tender_id: int):
+    tender = get_tender(tender_id)
+    if tender is None:
+        return None
+
+    bidders = get_tender_bidders(tender_id)
+    bidder_reports = []
+
+    for b in bidders:
+        verdicts = get_bidder_verdicts(b["bidder_id"])
+        bidder_reports.append({
+            "bidder_id": b["bidder_id"],
+            "filename": b["filename"],
+            "submitted_at": b["created_at"],
+            "criteria_results": [
+                {
+                    "criterion_id": v["criterion_id"],
+                    "criterion_name": v["criterion_name"],
+                    "mandatory": bool(v["mandatory"]),
+                    "extracted_value": v["extracted_value"],
+                    "source_page": v["source_page"],
+                    "raw_snippet": v["raw_snippet"],
+                    "confidence": v["confidence"],
+                    "verdict": v["verdict"],
+                    "reason": v["reason"],
+                    "officer_action": v["officer_action"],
+                    "officer_justification": v["officer_justification"],
+                    "decided_at": v["decided_at"]
+                }
+                for v in verdicts
+            ]
+        })
+
+    return {
+        "tender_id": tender["tender_id"],
+        "tender_filename": tender["filename"],
+        "tender_created_at": tender["created_at"],
+        "criteria": tender["criteria"],
+        "criteria_approved": tender["approved"],
+        "bidders": bidder_reports,
+        "report_generated_at": datetime.now(timezone.utc).isoformat()
+    }

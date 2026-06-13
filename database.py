@@ -221,3 +221,27 @@ def get_full_audit_report(tender_id: int):
         "bidders": bidder_reports,
         "report_generated_at": datetime.now(timezone.utc).isoformat()
     }
+
+def get_all_tenders():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT t.*, 
+               (SELECT COUNT(*) FROM bidders b WHERE b.tender_id = t.tender_id) as bidder_count
+        FROM tenders t
+        ORDER BY t.tender_id DESC
+    """)
+    rows = cur.fetchall()
+    conn.close()
+
+    result = []
+    for row in rows:
+        result.append({
+            "tender_id": row["tender_id"],
+            "filename": row["filename"],
+            "approved": bool(row["approved"]),
+            "created_at": row["created_at"],
+            "criteria_count": len(json.loads(row["criteria_json"])),
+            "bidder_count": row["bidder_count"]
+        })
+    return result

@@ -291,3 +291,53 @@ th {
 .audit-section {
   border: 1px solid #1a73e8;
 }
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.list-header h2 {
+  margin: 0;
+}
+
+.status-approved {
+  color: #1a7f37;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.status-pending {
+  color: #b06000;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #1a73e8;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.back-btn {
+  margin-bottom: 16px;
+  display: inline-block;
+}
+
+.officer-action {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+  font-weight: 600;
+  color: #1a7f37;
+}

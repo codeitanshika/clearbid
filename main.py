@@ -133,3 +133,7 @@ async def audit_report(tender_id: int):
     if report is None:
         return {"error": "Tender not found"}
     return report
+
+@app.get("/tenders")
+async def list_tenders():
+    return {"tenders": db.get_all_tenders()}

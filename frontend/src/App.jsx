@@ -1,14 +1,94 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import './App.css'
 
 const API_BASE = 'http://127.0.0.1:8000'
 
-function App() {
-  const [tenderId, setTenderId] = useState(null)
+// ============ TENDER LIST VIEW ============
+function TenderList({ onSelectTender, onNewTender }) {
+  const [tenders, setTenders] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchTenders()
+  }, [])
+
+  const fetchTenders = async () => {
+    setLoading(true)
+    try {
+      const res = await axios.get(`${API_BASE}/tenders`)
+      setTenders(res.data.tenders)
+    } catch (err) {
+      console.error(err)
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div className="container">
+      <h1>ClearBid</h1>
+      <p className="subtitle">AI-based tender evaluation platform</p>
+
+      <div className="card">
+        <div className="list-header">
+          <h2>Tenders</h2>
+          <button className="approve-btn" onClick={onNewTender}>
+            + New Tender
+          </button>
+        </div>
+
+        {loading && <p className="hint">Loading...</p>}
+
+        {!loading && tenders.length === 0 && (
+          <p className="hint">No tenders yet. Click "New Tender" to upload one.</p>
+        )}
+
+        {tenders.length > 0 && (
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tender Document</th>
+                <th>Criteria</th>
+                <th>Bidders</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {tenders.map((t) => (
+                <tr key={t.tender_id}>
+                  <td>{t.tender_id}</td>
+                  <td>{t.filename}</td>
+                  <td>{t.criteria_count}</td>
+                  <td>{t.bidder_count}</td>
+                  <td>
+                    <span className={t.approved ? 'status-approved' : 'status-pending'}>
+                      {t.approved ? 'Approved' : 'Pending approval'}
+                    </span>
+                  </td>
+                  <td className="raw-text">{new Date(t.created_at).toLocaleString()}</td>
+                  <td>
+                    <button className="link-btn" onClick={() => onSelectTender(t.tender_id)}>
+                      Open →
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ============ TENDER DETAIL VIEW ============
+function TenderDetail({ tenderId, onBack }) {
   const [criteria, setCriteria] = useState([])
   const [approved, setApproved] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [bidderLoading, setBidderLoading] = useState(false)
   const [bidders, setBidders] = useState([])
   const [reviewQueue, setReviewQueue] = useState([])
@@ -16,24 +96,26 @@ function App() {
   const [justifications, setJustifications] = useState({})
   const [fraudFlags, setFraudFlags] = useState([])
 
-  const handleTenderUpload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+  useEffect(() => {
+    loadTender()
+  }, [tenderId])
 
+  const loadTender = async () => {
     setLoading(true)
-    const formData = new FormData()
-    formData.append('file', file)
-
     try {
-      const res = await axios.post(`${API_BASE}/upload-tender`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      setTenderId(res.data.tender_id)
+      const res = await axios.get(`${API_BASE}/tender/${tenderId}`)
       setCriteria(res.data.criteria)
-      setApproved(false)
-      setBidders([])
+      setApproved(res.data.approved)
+
+      const bidderRes = await axios.get(`${API_BASE}/tender/${tenderId}/bidders`)
+      setBidders(bidderRes.data.bidders)
+
+      if (res.data.approved) {
+        fetchReviewQueue()
+        fetchFraudFlags()
+      }
     } catch (err) {
-      alert('Error uploading tender: ' + err.message)
+      console.error(err)
     }
     setLoading(false)
   }
@@ -72,17 +154,19 @@ function App() {
     fetchReviewQueue()
     fetchFraudFlags()
   }
+
   const fetchReviewQueue = async () => {
     setReviewLoading(true)
     try {
       const res = await axios.get(`${API_BASE}/tender/${tenderId}/needs-review`)
       setReviewQueue(res.data.items)
     } catch (err) {
-      alert('Error fetching review queue: ' + err.message)
+      console.error('Error fetching review queue:', err.message)
     }
     setReviewLoading(false)
   }
-const fetchFraudFlags = async () => {
+
+  const fetchFraudFlags = async () => {
     try {
       const res = await axios.get(`${API_BASE}/tender/${tenderId}/fraud-check`)
       setFraudFlags(res.data.flags)
@@ -90,22 +174,7 @@ const fetchFraudFlags = async () => {
       console.error('Error fetching fraud flags:', err.message)
     }
   }
-  const downloadAuditReport = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/tender/${tenderId}/audit-report`)
-      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `clearbid_audit_report_tender_${tenderId}.json`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-    } catch (err) {
-      alert('Error downloading report: ' + err.message)
-    }
-  }
+
   const handleReviewAction = async (verdictId, action) => {
     const justification = justifications[verdictId]
     if (!justification || justification.trim() === '') {
@@ -129,6 +198,23 @@ const fetchFraudFlags = async () => {
     setJustifications(prev => ({ ...prev, [verdictId]: value }))
   }
 
+  const downloadAuditReport = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/tender/${tenderId}/audit-report`)
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `clearbid_audit_report_tender_${tenderId}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      alert('Error downloading report: ' + err.message)
+    }
+  }
+
   const verdictClass = (verdict) => {
     if (verdict === 'PASS') return 'verdict-pass'
     if (verdict === 'FAIL') return 'verdict-fail'
@@ -141,62 +227,60 @@ const fetchFraudFlags = async () => {
     return 'NEEDS REVIEW'
   }
 
+  if (loading) {
+    return (
+      <div className="container">
+        <button className="link-btn" onClick={onBack}>← Back to tenders</button>
+        <p className="hint">Loading tender...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="container">
+      <button className="link-btn back-btn" onClick={onBack}>← Back to tenders</button>
       <h1>ClearBid</h1>
-      <p className="subtitle">AI-based tender evaluation platform</p>
+      <p className="subtitle">Tender #{tenderId}</p>
 
       <div className="card">
-        <h2>Step 1: Upload Tender Document</h2>
-        <input type="file" accept=".pdf" onChange={handleTenderUpload} />
-        {loading && <p>Extracting criteria...</p>}
-      </div>
-
-      {criteria.length > 0 && (
-        <div className="card">
-          <h2>Step 2: Review Extracted Criteria</h2>
-          <p className="hint">
-            Review the criteria below. Confirm before bidder evaluation begins.
-          </p>
-
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Mandatory</th>
-                <th>Threshold</th>
-                <th>Raw Text</th>
+        <h2>Eligibility Criteria</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Mandatory</th>
+              <th>Threshold</th>
+              <th>Raw Text</th>
+            </tr>
+          </thead>
+          <tbody>
+            {criteria.map((c) => (
+              <tr key={c.criterion_id}>
+                <td>{c.criterion_id}</td>
+                <td>{c.name}</td>
+                <td>{c.type}</td>
+                <td>{c.mandatory ? 'Yes' : 'No'}</td>
+                <td>{c.threshold ?? '-'}</td>
+                <td className="raw-text">{c.raw_text}</td>
               </tr>
-            </thead>
-            <tbody>
-              {criteria.map((c) => (
-                <tr key={c.criterion_id}>
-                  <td>{c.criterion_id}</td>
-                  <td>{c.name}</td>
-                  <td>{c.type}</td>
-                  <td>{c.mandatory ? 'Yes' : 'No'}</td>
-                  <td>{c.threshold ?? '-'}</td>
-                  <td className="raw-text">{c.raw_text}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </tbody>
+        </table>
 
-          {!approved ? (
-            <button className="approve-btn" onClick={handleApprove}>
-              Confirm Criteria & Proceed
-            </button>
-          ) : (
-            <p className="approved-msg">✓ Criteria approved. Tender ID: {tenderId}</p>
-          )}
-        </div>
-      )}
+        {!approved ? (
+          <button className="approve-btn" onClick={handleApprove}>
+            Confirm Criteria & Proceed
+          </button>
+        ) : (
+          <p className="approved-msg">✓ Criteria approved</p>
+        )}
+      </div>
 
       {approved && (
         <div className="card">
-          <h2>Step 3: Upload Bidder Documents</h2>
+          <h2>Upload Bidder Documents</h2>
           <p className="hint">
             Upload one or more bidder submission PDFs. Each will be evaluated against the approved criteria.
           </p>
@@ -212,7 +296,7 @@ const fetchFraudFlags = async () => {
 
       {bidders.map((bidder) => (
         <div className="card" key={bidder.bidder_id}>
-          <h2>Bidder: {bidder.bidder}</h2>
+          <h2>Bidder: {bidder.filename || bidder.bidder}</h2>
           <div className="verdict-grid">
             {bidder.verdicts.map((v) => (
               <div key={v.criterion_id} className={`verdict-box ${verdictClass(v.verdict)}`}>
@@ -225,7 +309,7 @@ const fetchFraudFlags = async () => {
                 <div className="verdict-body">
                   <div className="verdict-row">
                     <span className="label">Extracted value:</span>
-                    <span>{v.extracted_value !== null ? String(v.extracted_value) : '—'}</span>
+                    <span>{v.extracted_value !== null && v.extracted_value !== 'null' ? String(v.extracted_value).replace(/"/g, '') : '—'}</span>
                   </div>
                   {v.source_page && (
                     <div className="verdict-row">
@@ -247,12 +331,19 @@ const fetchFraudFlags = async () => {
                     <span className="label">Reason:</span>
                     <span>{v.reason}</span>
                   </div>
+                  {v.officer_action && (
+                    <div className="verdict-row officer-action">
+                      <span className="label">Officer:</span>
+                      <span>{v.officer_action} — {v.officer_justification}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
       ))}
+
       {fraudFlags.length > 0 && (
         <div className="card fraud-section">
           <h2>⚠ Fraud Signals Detected</h2>
@@ -267,6 +358,7 @@ const fetchFraudFlags = async () => {
           ))}
         </div>
       )}
+
       {reviewLoading && <p className="hint">Loading review queue...</p>}
 
       {reviewQueue.length > 0 && (
@@ -286,7 +378,7 @@ const fetchFraudFlags = async () => {
               <div className="review-body">
                 <div className="verdict-row">
                   <span className="label">Extracted value:</span>
-                  <span>{item.extracted_value !== 'null' ? item.extracted_value : '—'}</span>
+                  <span>{item.extracted_value && item.extracted_value !== 'null' ? String(item.extracted_value).replace(/"/g, '') : '—'}</span>
                 </div>
                 {item.source_page && (
                   <div className="verdict-row">
@@ -314,22 +406,13 @@ const fetchFraudFlags = async () => {
               />
 
               <div className="review-actions">
-                <button
-                  className="action-btn approve"
-                  onClick={() => handleReviewAction(item.verdict_id, 'APPROVED')}
-                >
+                <button className="action-btn approve" onClick={() => handleReviewAction(item.verdict_id, 'APPROVED')}>
                   Approve
                 </button>
-                <button
-                  className="action-btn reject"
-                  onClick={() => handleReviewAction(item.verdict_id, 'REJECTED')}
-                >
+                <button className="action-btn reject" onClick={() => handleReviewAction(item.verdict_id, 'REJECTED')}>
                   Reject
                 </button>
-                <button
-                  className="action-btn clarify"
-                  onClick={() => handleReviewAction(item.verdict_id, 'CLARIFICATION_REQUESTED')}
-                >
+                <button className="action-btn clarify" onClick={() => handleReviewAction(item.verdict_id, 'CLARIFICATION_REQUESTED')}>
                   Request Clarification
                 </button>
               </div>
@@ -339,11 +422,11 @@ const fetchFraudFlags = async () => {
       )}
 
       {!reviewLoading && reviewQueue.length === 0 && bidders.length > 0 && (
-    
         <div className="card">
           <p className="approved-msg">✓ No items pending review. All evaluations complete.</p>
         </div>
       )}
+
       {bidders.length > 0 && (
         <div className="card audit-section">
           <h2>Audit Trail</h2>
@@ -358,6 +441,79 @@ const fetchFraudFlags = async () => {
       )}
     </div>
   )
+}
+
+// ============ NEW TENDER UPLOAD VIEW ============
+function NewTenderUpload({ onUploaded, onBack }) {
+  const [loading, setLoading] = useState(false)
+
+  const handleTenderUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    setLoading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const res = await axios.post(`${API_BASE}/upload-tender`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      onUploaded(res.data.tender_id)
+    } catch (err) {
+      alert('Error uploading tender: ' + err.message)
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="container">
+      <button className="link-btn back-btn" onClick={onBack}>← Back to tenders</button>
+      <h1>ClearBid</h1>
+      <p className="subtitle">Upload a new tender document</p>
+
+      <div className="card">
+        <h2>Upload Tender Document</h2>
+        <input type="file" accept=".pdf" onChange={handleTenderUpload} />
+        {loading && <p>Extracting criteria... this may take a few seconds</p>}
+      </div>
+    </div>
+  )
+}
+
+// ============ MAIN APP ============
+function App() {
+  const [view, setView] = useState('list') // 'list' | 'detail' | 'new'
+  const [selectedTenderId, setSelectedTenderId] = useState(null)
+
+  const goToList = () => {
+    setView('list')
+    setSelectedTenderId(null)
+  }
+
+  const goToDetail = (tenderId) => {
+    setSelectedTenderId(tenderId)
+    setView('detail')
+  }
+
+  const goToNew = () => {
+    setView('new')
+  }
+
+  const onTenderUploaded = (tenderId) => {
+    setSelectedTenderId(tenderId)
+    setView('detail')
+  }
+
+  if (view === 'new') {
+    return <NewTenderUpload onUploaded={onTenderUploaded} onBack={goToList} />
+  }
+
+  if (view === 'detail') {
+    return <TenderDetail tenderId={selectedTenderId} onBack={goToList} />
+  }
+
+  return <TenderList onSelectTender={goToDetail} onNewTender={goToNew} />
 }
 
 export default App

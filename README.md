@@ -1,6 +1,6 @@
 # ClearBid
 
-AI-based tender evaluation and eligibility analysis platform for government procurement (CRPF Theme 3).
+AI-based tender evaluation and eligibility analysis platform for government procurement
 
 ## What it does
 

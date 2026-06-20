@@ -23,13 +23,19 @@ Tender text:
 """
 
 def extract_criteria(tender_text: str) -> list:
+    if not tender_text or len(tender_text.strip()) < 20:
+        raise ValueError("Tender document appears empty or could not be read. Please check the PDF.")
+
     prompt = EXTRACTION_PROMPT.format(tender_text=tender_text)
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0
-    )
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0
+        )
+    except Exception as e:
+        raise RuntimeError(f"LLM request failed: {str(e)}")
 
     raw = response.choices[0].message.content.strip()
 
@@ -40,6 +46,9 @@ def extract_criteria(tender_text: str) -> list:
     try:
         criteria = json.loads(raw)
     except json.JSONDecodeError:
-        criteria = []
+        raise RuntimeError("The AI returned an unexpected format. Please try uploading again.")
+
+    if not isinstance(criteria, list) or len(criteria) == 0:
+        raise RuntimeError("No eligibility criteria could be extracted from this document.")
 
     return criteria

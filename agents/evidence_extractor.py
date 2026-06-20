@@ -35,16 +35,22 @@ Return ONLY a JSON array of these objects. No explanation, no markdown.
 """
 
 def extract_evidence(bidder_text: str, criteria: list) -> list:
+    if not bidder_text or len(bidder_text.strip()) < 10:
+        raise ValueError("Bidder document appears empty or could not be read.")
+
     prompt = EVIDENCE_PROMPT.format(
         criteria_json=json.dumps(criteria, indent=2),
         bidder_text=bidder_text
     )
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0
-    )
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0
+        )
+    except Exception as e:
+        raise RuntimeError(f"LLM request failed: {str(e)}")
 
     raw = response.choices[0].message.content.strip()
 
@@ -55,6 +61,6 @@ def extract_evidence(bidder_text: str, criteria: list) -> list:
     try:
         evidence = json.loads(raw)
     except json.JSONDecodeError:
-        evidence = []
+        raise RuntimeError("Could not parse bidder evaluation results. Please try again.")
 
     return evidence

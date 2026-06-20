@@ -221,6 +221,10 @@ function TenderDetail({ tenderId, onBack }) {
     }
   }
 
+  const downloadAuditReportPDF = () => {
+    window.open(`${API_BASE}/tender/${tenderId}/audit-report-pdf`, '_blank')
+  }
+
   const verdictClass = (verdict) => {
     if (verdict === 'PASS') return 'verdict-pass'
     if (verdict === 'FAIL') return 'verdict-fail'
@@ -440,9 +444,14 @@ function TenderDetail({ tenderId, onBack }) {
             Download the complete decision record for this tender — every criterion,
             extracted value, source, confidence score, verdict, and officer action with timestamps.
           </p>
-          <button className="approve-btn" onClick={downloadAuditReport}>
-            Download Audit Report (JSON)
-          </button>
+          <div className="audit-buttons">
+            <button className="approve-btn" onClick={downloadAuditReportPDF}>
+              Download PDF Report
+            </button>
+            <button className="secondary-btn" onClick={downloadAuditReport}>
+              Download JSON
+            </button>
+          </div>
         </div>
       )}
     </div>

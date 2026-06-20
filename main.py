@@ -7,6 +7,9 @@ import json
 from fastapi import FastAPI, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 
+from agents.report_generator import generate_audit_pdf
+from fastapi.responses import Response
+
 from agents.document_parser import parse_pdf
 from agents.criteria_extractor import extract_criteria
 from agents.evidence_extractor import extract_evidence
@@ -133,3 +136,19 @@ async def audit_report(tender_id: int):
 @app.get("/tenders")
 async def list_tenders():
     return {"tenders": db.get_all_tenders()}
+
+@app.get("/tender/{tender_id}/audit-report-pdf")
+async def audit_report_pdf(tender_id: int):
+    report = db.get_full_audit_report(tender_id)
+    if report is None:
+        return {"error": "Tender not found"}
+
+    pdf_bytes = generate_audit_pdf(report)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=clearbid_audit_report_tender_{tender_id}.pdf"
+        }
+    )

@@ -4,3 +4,4 @@ groq
 pymupdf
 python-multipart
 python-dotenv 
+reportlab

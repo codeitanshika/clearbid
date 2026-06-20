@@ -144,9 +144,15 @@ function TenderDetail({ tenderId, onBack }) {
         const res = await axios.post(`${API_BASE}/evaluate-bidder`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         })
+
+        if (res.data.error) {
+          alert(`${file.name}: ${res.data.error}`)
+          continue
+        }
+
         setBidders(prev => [...prev, res.data])
       } catch (err) {
-        alert(`Error evaluating ${file.name}: ` + err.message)
+        alert(`Error evaluating ${file.name}: Could not connect to server.`)
       }
     }
 
@@ -459,9 +465,16 @@ function NewTenderUpload({ onUploaded, onBack }) {
       const res = await axios.post(`${API_BASE}/upload-tender`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
+
+      if (res.data.error) {
+        alert(res.data.error)
+        setLoading(false)
+        return
+      }
+
       onUploaded(res.data.tender_id)
     } catch (err) {
-      alert('Error uploading tender: ' + err.message)
+      alert('Could not connect to server. Make sure the backend is running.')
       setLoading(false)
     }
   }

@@ -31,34 +31,28 @@ db.init_db()
 
 @app.post("/upload-tender")
 async def upload_tender(file: UploadFile):
+    if not file.filename.lower().endswith(".pdf"):
+        return {"error": "Only PDF files are supported."}
+
     path = os.path.join(UPLOAD_DIR, file.filename)
     with open(path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    text = parse_pdf(path)
-    criteria = extract_criteria(text)
+    try:
+        text = parse_pdf(path)
+        criteria = extract_criteria(text)
+    except Exception as e:
+        return {"error": str(e)}
 
     tender_id = db.save_tender(file.filename, criteria)
-
     return {"tender_id": tender_id, "criteria": criteria}
-
-
-@app.post("/approve-tender/{tender_id}")
-async def approve_tender(tender_id: int):
-    db.approve_tender(tender_id)
-    return {"status": "approved", "tender_id": tender_id}
-
-
-@app.get("/tender/{tender_id}")
-async def get_tender(tender_id: int):
-    tender = db.get_tender(tender_id)
-    if tender is None:
-        return {"error": "Tender not found"}
-    return tender
 
 
 @app.post("/evaluate-bidder")
 async def evaluate_bidder(file: UploadFile, tender_id: int = Form(...)):
+    if not file.filename.lower().endswith(".pdf"):
+        return {"error": "Only PDF files are supported."}
+
     tender = db.get_tender(tender_id)
     if tender is None:
         return {"error": "Tender not found"}
@@ -72,15 +66,17 @@ async def evaluate_bidder(file: UploadFile, tender_id: int = Form(...)):
     with open(path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    text = parse_pdf(path)
-    evidence = extract_evidence(text, criteria_list)
-    verdicts = evaluate(evidence, criteria_list)
+    try:
+        text = parse_pdf(path)
+        evidence = extract_evidence(text, criteria_list)
+        verdicts = evaluate(evidence, criteria_list)
+    except Exception as e:
+        return {"error": str(e)}
 
     bidder_id = db.save_bidder(tender_id, file.filename)
     db.save_verdicts(bidder_id, verdicts)
 
     return {"bidder_id": bidder_id, "bidder": file.filename, "verdicts": verdicts}
-
 
 @app.get("/tender/{tender_id}/bidders")
 async def get_bidders(tender_id: int):

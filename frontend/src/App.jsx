@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import './App.css'
+import Navbar from './components/Navbar'
+import BidderSummaryCard from './components/BidderSummaryCard'
+import Spinner from './components/Spinner'
 
 const API_BASE = 'http://127.0.0.1:8000'
 
@@ -9,9 +12,7 @@ function TenderList({ onSelectTender, onNewTender }) {
   const [tenders, setTenders] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchTenders()
-  }, [])
+  
 
   const fetchTenders = async () => {
     setLoading(true)
@@ -23,6 +24,9 @@ function TenderList({ onSelectTender, onNewTender }) {
     }
     setLoading(false)
   }
+  useEffect(() => {
+    fetchTenders()
+  }, [])
 
   return (
     <div className="container">
@@ -96,9 +100,7 @@ function TenderDetail({ tenderId, onBack }) {
   const [justifications, setJustifications] = useState({})
   const [fraudFlags, setFraudFlags] = useState([])
 
-  useEffect(() => {
-    loadTender()
-  }, [tenderId])
+  
 
   const loadTender = async () => {
     setLoading(true)
@@ -119,6 +121,9 @@ function TenderDetail({ tenderId, onBack }) {
     }
     setLoading(false)
   }
+  useEffect(() => {
+    loadTender()
+  }, [tenderId])
 
   const handleApprove = async () => {
     try {

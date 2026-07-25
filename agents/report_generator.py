@@ -12,10 +12,13 @@ import io
 def generate_audit_pdf(report_data: dict) -> bytes:
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
-        buffer, pagesize=A4,
-        topMargin=20 * mm, bottomMargin=20 * mm,
-        leftMargin18 := 18 * mm, rightMargin=18 * mm
-    )
+            buffer,
+            pagesize=A4,
+            topMargin=20 * mm,
+            bottomMargin=20 * mm,
+            leftMargin=18 * mm,
+            rightMargin=18 * mm
+        )
 
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
